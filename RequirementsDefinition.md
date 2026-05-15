@@ -133,7 +133,7 @@
 ```json
 [
   {
-    "id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+    "id": 1,
     "created_at": "2026-05-11T10:00:00+09:00",
     "question": "電話番号を変更しました。",
     "answer": "どんまい",
