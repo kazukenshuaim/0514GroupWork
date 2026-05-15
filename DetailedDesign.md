@@ -1,0 +1,240 @@
+# 詳細設計書
+
+**プロジェクト名：** AI問い合わせ管理アプリ   
+**作成日：** 2026-05-15  
+**対象研修：** AI問い合わせ管理アプリ開発研修
+
+## 1. API仕様
+
+### 1.1. POST /inquiries 問い合わせをJSONファイルに保存する
+
+**概要：** 新規の問い合わせを入力、送信するとAIが回答、カテゴリ、緊急度を返す。
+
+**リクエスト：**
+
+```
+POST http://localhost:8000/inquiries
+Content-Type: application/json
+```
+
+```json
+{
+    "question": "電話番号を変更しました。"
+}
+```
+
+| フィールド | 型 | 必須 | 説明 |
+|---|---|---|---|
+| question | 文字列 | ○ | 問い合わせ本文（空不可）|
+
+**レスポンス（成功 201）:**
+
+```json
+{
+    "id": 2,
+    "created_at": "2026-05-14T10:00:00+9:00",
+    "question": "電話番号を変更しました。",
+    "answer": "どんまい",
+    "category": "社員情報変更",
+    "urgency": "中"
+}
+```
+
+**エラーレスポンス:**
+| ステータス | 発生条件 |
+|---|---|
+| 422 | JSONの内容が不正 |
+| 500 | サーバーの内部のエラー |
+
+### 1.2. GET /inquiries 問い合わせ一覧を返す
+
+**概要：** 送信済みのタスクを全件、問い合わせ日時の降順（新しい順）で返す。
+
+**リクエスト：**
+```
+GET http://localhost:8000/inquiries
+```
+
+**レスポンス（成功 200）:**
+```json
+[
+    {
+        "id": 2,
+        "created_at": "2026-05-14T10:00:00+9:00",
+        "question": "電話番号を変更しました。",
+        "answer": "どんまい",
+        "category": "社員情報変更",
+        "urgency": "中"
+    },
+    {
+        "id": 1,
+        "created_at": "2026-05-13T14:30:00+9:00",
+        "question": "運転免許証をなくした。",
+        "answer": "再発行しよう",
+        "category": "その他",
+        "urgency": "高"
+    }
+]
+```
+- 問い合わせが0件のときは、空のリスト`[]`を返す
+
+**エラーレスポンス:**
+| ステータス | 発生条件 |
+|---|---|
+| 500 | サーバーの内部のエラー |
+
+### 1.3. GET /inquiries/{id} 指定IDの問い合わせを返す
+
+**概要：** 指定IDの問い合わせの詳細を1件返す。
+
+**リクエスト：**
+```
+GET http://localhost:8000/inquiries/1
+```
+
+**レスポンス（成功 200）:**
+
+```json
+{
+    "id": 2,
+    "created_at": "2026-05-14T10:00:00+9:00",
+    "question": "電話番号を変更しました。",
+    "answer": "どんまい",
+    "category": "社員情報変更",
+    "urgency": "中"
+}
+```
+
+**エラーレスポンス:**
+| ステータス | 発生条件 |
+|---|---|
+| 404 | 指定したIDが存在しない |
+| 500 | サーバーの内部のエラー |
+
+## 2. データモデル
+
+```Python
+from pydantic import BaseModel
+
+class InquiryRequest(BaseModel):
+    question: str          # POST リクエストボディ
+
+class InquiryRecord(BaseModel):
+    id: int
+    created_at: str
+    quesition: str
+    answer: str
+    category: str
+    urgency: str
+```
+## 3. 外部連携仕様
+
+**送信するプロンプト**
+
+```Python
+システムプロンプト：
+  あなたは社内の総務部門向け問い合わせ分類AIアシスタントです。
+  社員からの問い合わせ文を受け取り、以下のJSON形式のみで回答してください。
+  余分な説明や前置きは不要です。
+
+  出力形式：
+  {
+    "category": "カテゴリ名",
+    "urgency": "高 または 中 または 低",
+    "answer": "一次回答文"
+  }
+
+  カテゴリは以下の中から最も適切な1つを選んでください：
+  勤怠, 休暇, 給与, 経費精算, 社員情報, その他
+
+ユーザーメッセージ：
+  {問い合わせ本文（そのまま渡す）}
+```
+
+---
+
+## 4. データ操作処理
+
+### 4.1. 全件読み込み
+
+1. DATA_FILE_PATH のファイルが存在するか確認する
+2. 存在しない場合は空のリスト [] を返す
+3. 存在する場合は json.load() で読み込む
+4. リストを返す
+
+### 4.2. 問い合わせ送信
+
+1. 全件読み込みを行いリストを取得する
+2. 新しいレコードをリストの末尾に append する
+3. json.dump() でファイルに上書き保存する
+   （オプション：ensure_ascii=False, indent=2）
+
+### 4.3. 一覧表示
+
+1. DATA_FILE_PATH のファイルが存在するか確認する
+2. 存在しない場合は空のリスト [] を返す
+3. 存在する場合は json.load() で読み込んでリストを取得する
+4. IDの降順（新しい順）に並べ替えてリストに再代入する
+    （sorted(data, key=lambda x: x["ID"], reverse=True)を用いる）
+5. リストを返す
+
+### 4.4. 詳細表示
+
+1. 全件読み込みを行いリストを取得する
+2. 指定したIDが一致するレコードを検索する
+3. 見つかれば返す。見つからなければNoneを返す
+
+---
+
+## 5. 画面詳細
+
+### 5.1. サイドバー
+
+```Python
+st.sidebar.title("メニュー")
+page = st.sidebar.radio("ページ", ["問い合わせ入力", "問い合わせ一覧"])
+```
+
+### 5.2. 問い合わせ入力画面
+
+```Python
+if page == "問い合わせ入力画面":
+    st.title("AI問い合わせ管理アプリ")
+    st.subheader("問い合わせ入力画面")
+
+    question = st.text_area("問い合わせ内容を入力してください", height = 150)
+
+    if st.button("送信する"):
+        if question.strip() == "":
+            st.error("問い合わせ内容を入力してください。")
+        else:
+            response = POST /inquiriesにquestionを送信
+            if response.ok:
+                data = response.json()
+                st.success("送信成功しました")
+            else:
+                st.error("送信に失敗しました")
+```
+
+### 5.3. 一覧画面
+
+```Python
+import pandas as pd
+
+if page == "一覧画面":
+    st.title("AI問い合わせ管理アプリ")
+    st.subheader("一覧画面")
+    response = GET /inquiriesにquestionを送信
+    if response.ok:
+        inquiries = response.json
+        if inquiries:
+            for
+
+
+```
+
+### 5.4. 詳細画面
+
+
+## 6. エラー処理一覧
+## 7. テスト観点
