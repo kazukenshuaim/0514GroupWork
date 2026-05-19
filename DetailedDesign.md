@@ -153,7 +153,6 @@ class InquiryRecord(BaseModel):
   {問い合わせ本文（そのまま渡す）}
 ```
 
-### 3.2 処理手順
 
 ### 3.2 処理手順
 
