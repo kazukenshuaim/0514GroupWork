@@ -15,7 +15,6 @@ from backend.storage import read_inquiries, write_inquiries
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-# 新しい方式でGeminiクライアントを初期化
 client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 app = FastAPI()
@@ -54,7 +53,6 @@ def analyze_with_gemini(question: str):
     """
     
     try:
-        # 新しいSDKの関数呼び出し形式に変更（推奨モデル: gemini-2.5-flash）
         response = client.models.generate_content(
             model='gemini-2.5-flash',
             contents=question,

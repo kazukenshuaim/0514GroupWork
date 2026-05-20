@@ -4,9 +4,11 @@ import requests
 
 API_URL = "http://localhost:8000"
 
+#############
+
 if "page" not in st.session_state:
     st.session_state["page"] = "問い合わせ入力"
-#############
+
 if st.session_state["page"] != "detail":
     st.sidebar.title("メニュー")
     selected_page = st.sidebar.radio(
@@ -53,6 +55,7 @@ elif st.session_state["page"] == "問い合わせ一覧":
             inquiries = response.json()
             if len(inquiries) == 0:
                 st.info("問い合わせがありません")
+
             else:
                 header_col1, header_col2 = st.columns([3, 7])
                 with header_col1:
