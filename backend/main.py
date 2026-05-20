@@ -31,6 +31,8 @@ class InquiryRecord(BaseModel):
     category: str
     urgency: str
 
+####################
+
 def analyze_with_gemini(question: str):
     if not client:
         raise HTTPException(status_code=500, detail="Gemini APIキーが設定されていません")
@@ -60,16 +62,18 @@ def analyze_with_gemini(question: str):
                 system_instruction=system_prompt,
             )
         )
-        
+        #clean (```json , ```)
         result_text = response.text.strip()
         if result_text.startswith("```json"):
             result_text = result_text[7:-3]
             
         return json.loads(result_text)
     except Exception as e:
-        # ターミナル側で具体的なエラー内容を確認できるようにログを出力
+        # not to crush
         print(f"Gemini API Error: {e}")
         raise HTTPException(status_code=500, detail="Gemini APIとの通信に失敗しました")
+
+####################
 
 @app.post("/inquiries", status_code=201)
 def create_inquiry(req: InquiryRequest):
@@ -97,13 +101,14 @@ def create_inquiry(req: InquiryRequest):
     write_inquiries(data)
     return new_record
 
+######################
+
 @app.get("/inquiries")
 def get_inquiries():
     data = read_inquiries()
-    # 降順（新しい順）に並べ替え
     sorted_data = sorted(data, key=lambda x: x["id"], reverse=True)
     return sorted_data
-
+########################
 @app.get("/inquiries/{inquiry_id}")
 def get_inquiry_detail(inquiry_id: int):
     data = read_inquiries()

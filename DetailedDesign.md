@@ -317,31 +317,7 @@ try:
 except Exception:
 
     st.error("バックエンドに接続できません")
-if page == "問い合わせ入力画面":
 
-    st.title("AI問い合わせ管理アプリ")
-
-    st.subheader("問い合わせ入力画面")
-
-    question = st.text_area(
-        "問い合わせ内容を入力してください",
-        height=150
-    )
-
-    if st.button("送信する"):
-        if question.strip() == "":
-            st.error("問い合わせ内容を入力してください。")
-        else:
-            response = POST /inquiries に question を送信
-            if response.ok:
-                data = response.json()
-                st.success("問い合わせを送信しました")
-                st.write("カテゴリ：", data["category"])
-                st.write("緊急度：", data["urgency"])
-                st.write("回答案：", data["answer"])
-            else:
-
-                st.error("送信に失敗しました")
 
 ```
 
